@@ -1,11 +1,10 @@
 import random
-import string
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.schemas import UserCreate
+from app.schemas import UserCreate, MixRequest
 from app.config import settings
 
-app = FastAPI(title="Soulmate API")
+app = FastAPI(title="service2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,16 +14,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/user")
-async def save_user(payload: UserCreate):
-    # TODO: переписать на СУБД, пока пишем в лог-файл
-    with open("users_data.txt", "a", encoding="utf-8") as f:
-        f.write(f"{payload.name} | {payload.age}\n")
-    return {"status": "ok"}
+@app.post("/api/register")
+def register_user(payload: UserCreate):
+    try:
+        with open("users_data.txt", "a", encoding="utf-8") as f:
+            f.write(f"Name: {payload.name}, Age: {payload.age}\n")
+        return {"status": "ok", "message": "Успешная регистрация"}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Ошибка записи на сервере")
 
-@app.get("/api/soulmate")
-async def get_soulmate(nickname: str):
-    length = random.randint(5, 10)
-    chars = string.ascii_lowercase
-    soulmate_name = "".join(random.choices(chars, k=length))
-    return {"soulmate": soulmate_name}
+@app.post("/api/mix")
+def mix_characters(payload: MixRequest):
+    if not payload.text:
+        return {"result": ""}
+    
+    char_list = list(payload.text)
+    random.shuffle(char_list)
+    mixed_text = "".join(char_list)
+    
+    return {"result": mixed_text}

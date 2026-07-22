@@ -2,73 +2,99 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Random service</title>
+    <title>service2</title>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .box { background: #2a2a2a; padding: 25px; border-radius: 8px; text-align: center; width: 280px; }
-        input { width: 100%; padding: 8px; margin: 8px 0; border-radius: 4px; border: 1px solid #444; background: #333; color: #fff; box-sizing: border-box; }
+        input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; border-radius: 4px; border: 1px solid #444; background: #333; color: #fff; }
         button { width: 100%; padding: 10px; background: #e74c3c; border: none; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; }
         button:hover { background: #c0392b; }
         .hidden { display: none; }
-        #result { margin-top: 15px; font-size: 18px; color: #2ecc71; font-weight: bold; }
-        /* Прячем стрелочки вверх-вниз у поля ввода числа */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        #result { margin-top: 15px; font-size: 18px; color: #2ecc71; font-weight: bold; word-break: break-all; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <div id="step1">
-            <h3>Регистрация</h3>
-            <input type="text" id="name" placeholder="Имя">
-            <input type="number" id="age" placeholder="Возраст">
-            <button onclick="login()">Войти</button>
-        </div>
-
-        <div id="step2" class="hidden">
-            <h3>Введи свой игровой никнейм чтобы получить рандомные знаки</h3>
-            <input type="text" id="nickname" placeholder="Введи ник">
-            <button onclick="generate()">Сгенерировать</button>
-            <div id="result"></div>
-        </div>
+<div class="box">
+    <div id="step1">
+        <h3>Регистрация</h3>
+        <input type="text" id="name" placeholder="Имя">
+        <input type="number" id="age" placeholder="Возраст">
+        <button onclick="register()">Войти</button>
     </div>
 
-    <script>
-        const API_URL = 'http://localhost/api';
+    <div id="step2" class="hidden">
+        <h3>Перемешивание строк</h3>
+        <input type="text" id="textToMix" placeholder="Введите текст">
+        <button onclick="mixText()">Перемешать</button>
+        <div id="result"></div>
+    </div>
+</div>
 
-        async function login() {
-            const name = document.getElementById('name').value;
-            const age = document.getElementById('age').value;
-            if (!name || !age) return alert('Заполни поля');
+<script>
+    const API_URL = "http://localhost:8000/api";
 
-            try {
-                const res = await fetch(`${API_URL}/user`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, age })
-                });
+    async function register() {
+        const name = document.getElementById('name').value;
+        const age = document.getElementById('age').value;
 
-                if (res.ok) {
-                    document.getElementById('step1').classList.add('hidden');
-                    document.getElementById('step2').classList.remove('hidden');
+        if (!name || !age) {
+            alert('Заполните все поля!');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, age: Number(age) })
+            });
+
+            if (res.ok) {
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+            } else {
+                const errData = await res.json();
+                let errMsg = "Ошибка регистрации";
+                
+                if (errData.detail && Array.isArray(errData.detail) && errData.detail[0]) {
+                    errMsg = errData.detail[0].msg || errMsg;
+                } else if (errData.detail && typeof errData.detail === 'string') {
+                    errMsg = errData.detail;
                 }
-            } catch (err) {
-                alert('Ошибка подключения к бэкендом');
+                
+                alert(`Ошибка: ${errMsg}`);
             }
+        } catch (err) {
+            alert('Не удалось подключиться к серверу');
+        }
+    }
+
+    async function mixText() {
+        const text = document.getElementById('textToMix').value;
+
+        if (!text) {
+            alert('Введите символы!');
+            return;
         }
 
-        async function generate() {
-            const nick = document.getElementById('nickname').value;
-            if (!nick) return alert('Введи ник');
+        try {
+            const res = await fetch(`${API_URL}/mix`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
 
-            try {
-                const res = await fetch(`${API_URL}/soulmate?nickname=${nick}`);
+            if (res.ok) {
                 const data = await res.json();
-                document.getElementById('result').innerText = `Вы получили: ${data.soulmate}`;
-            } catch (err) {
-                alert('Ошибка генерации');
+                document.getElementById('result').innerText = `Результат: ${data.result}`;
+            } else {
+                alert('Ошибка при перемешивании текста');
             }
+        } catch (err) {
+            alert('Ошибка сети при отправке текста');
         }
-    </script>
+    }
+</script>
 </body>
 </html>

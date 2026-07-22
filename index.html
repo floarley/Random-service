@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Random service</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #2a2a2a; padding: 25px; border-radius: 8px; text-align: center; width: 280px; }
+        input { width: 100%; padding: 8px; margin: 8px 0; border-radius: 4px; border: 1px solid #444; background: #333; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #e74c3c; border: none; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #c0392b; }
+        .hidden { display: none; }
+        #result { margin-top: 15px; font-size: 18px; color: #2ecc71; font-weight: bold; }
+        /* Прячем стрелочки вверх-вниз у поля ввода числа */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <div id="step1">
+            <h3>Регистрация</h3>
+            <input type="text" id="name" placeholder="Имя">
+            <input type="number" id="age" placeholder="Возраст">
+            <button onclick="login()">Войти</button>
+        </div>
+
+        <div id="step2" class="hidden">
+            <h3>Введи свой игровой никнейм чтобы получить рандомные знаки</h3>
+            <input type="text" id="nickname" placeholder="Введи ник">
+            <button onclick="generate()">Сгенерировать</button>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost/api';
+
+        async function login() {
+            const name = document.getElementById('name').value;
+            const age = document.getElementById('age').value;
+            if (!name || !age) return alert('Заполни поля');
+
+            try {
+                const res = await fetch(`${API_URL}/user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, age })
+                });
+
+                if (res.ok) {
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Ошибка подключения к бэкендом');
+            }
+        }
+
+        async function generate() {
+            const nick = document.getElementById('nickname').value;
+            if (!nick) return alert('Введи ник');
+
+            try {
+                const res = await fetch(`${API_URL}/soulmate?nickname=${nick}`);
+                const data = await res.json();
+                document.getElementById('result').innerText = `Вы получили: ${data.soulmate}`;
+            } catch (err) {
+                alert('Ошибка генерации');
+            }
+        }
+    </script>
+</body>
+</html>
